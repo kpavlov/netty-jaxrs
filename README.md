@@ -8,9 +8,9 @@ JAX-RS server handler for [Netty 4.1][netty] using [Jersey][jersey].
  
 Create resource endpoint:
 
-```EchoEndpoint.java
+```java
 @Path("/")
-public class EchoEndpoint {
+public class EchoResource {
 
      @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -23,9 +23,8 @@ public class EchoEndpoint {
 ```
 
 Setup Jersey Application:
-```TestJerseyConfig.java
-
-public class TestJerseyConfig extends ResourceConfig {
+```java
+public class JerseyConfig extends ResourceConfig {
    
    public TestJerseyConfig() {
            setApplicationName("test");
@@ -33,16 +32,16 @@ public class TestJerseyConfig extends ResourceConfig {
            register(LoggingFeature.class);
            register(MultiPartFeature.class);
            // endpoints
-           register(EchoEndpoint.class);
+           register(EchoResource.class);
    }
 }
 ```
 
 Start netty server:
-```
+```java
 JaxrsNettyServer server = new JaxrsNettyServer(
         "localhost", 8080, 
-        new TestJerseyConfig()
+        new JerseyConfig()
     );
 server.start();
 ```
