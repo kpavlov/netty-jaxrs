@@ -23,6 +23,6 @@ public class JaxrsHttpChannelInitializer extends ChannelInitializer<SocketChanne
 //        p.addLast("encoder", new HttpResponseEncoder());
 //        p.addLast("decoder", new HttpRequestDecoder());
         p.addLast("aggregator", new HttpObjectAggregator(1048576));
-        p.addLast(new JerseyHttpHandler(application));
+        p.addLast(new JerseyHttpHandler(application, false));
     }
 }

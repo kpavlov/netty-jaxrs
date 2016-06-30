@@ -46,6 +46,7 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
     private static final AsciiString KEEP_ALIVE = new AsciiString("keep-alive");
 
     private final ApplicationHandler appHandler;
+    private final boolean isSecure;
 
     private static final SecurityContext dummySecurityContext = new SecurityContext() {
 
@@ -70,8 +71,9 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
         }
     };
 
-    public JerseyHttpHandler(Application application) {
+    public JerseyHttpHandler(Application application, boolean isSecure) {
         appHandler = new ApplicationHandler(application);
+        this.isSecure = isSecure;
     }
 
     @Override
@@ -104,7 +106,6 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
 
     @NotNull
     private FullHttpResponse consumeRequest(HttpRequest req) {
-
         FullHttpResponse response;
         try {
             final ContainerRequest requestContext = createContainerRequest(req);
@@ -118,7 +119,7 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
 
         } catch (Exception e) {
             response = new DefaultFullHttpResponse(req.protocolVersion(), INTERNAL_SERVER_ERROR);
-            response.headers().set(CONTENT_TYPE, "text/plain");
+            response.headers().set(CONTENT_TYPE, MediaType.TEXT_PLAIN);
         }
 
         return response;
@@ -128,7 +129,11 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
     private ContainerRequest createContainerRequest(HttpRequest req) throws URISyntaxException {
         final HttpHeaders headers = req.headers();
         final URI baseUri = new URI("http://" + headers.get(HttpHeaderNames.HOST) + "/");
-        final URI requestUri = UriBuilder.fromUri(baseUri).path(req.uri()).build();
+        final UriBuilder uriBuilder = UriBuilder.fromUri(baseUri).path(req.uri());
+        if (isSecure) {
+            uriBuilder.scheme("https");
+        }
+        final URI requestUri = uriBuilder.build();
         final String httpMethod = req.method().name();
 
         final ContainerRequest requestContext = new ContainerRequest(
