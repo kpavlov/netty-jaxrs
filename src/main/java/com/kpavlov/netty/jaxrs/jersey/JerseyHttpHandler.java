@@ -8,23 +8,8 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
-import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpUtil;
+import io.netty.handler.codec.http.*;
 import io.netty.util.AsciiString;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.security.Principal;
-import java.util.Map;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriBuilder;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -32,6 +17,14 @@ import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spi.Container;
 import org.jetbrains.annotations.NotNull;
+
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.UriBuilder;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -48,28 +41,7 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
     private final ApplicationHandler appHandler;
     private final boolean isSecure;
 
-    private static final SecurityContext dummySecurityContext = new SecurityContext() {
-
-        @Override
-        public boolean isUserInRole(final String role) {
-            return false;
-        }
-
-        @Override
-        public boolean isSecure() {
-            return false;
-        }
-
-        @Override
-        public Principal getUserPrincipal() {
-            return null;
-        }
-
-        @Override
-        public String getAuthenticationScheme() {
-            return null;
-        }
-    };
+    private static final SecurityContext dummySecurityContext = new DummySecurityContext();
 
     public JerseyHttpHandler(Application application, boolean isSecure) {
         appHandler = new ApplicationHandler(application);
@@ -147,11 +119,12 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
             consumeEntity((FullHttpRequest) req, requestContext);
         }
 
-        processHeaders(headers, requestContext);
+        processRequestHeaders(headers, requestContext);
+
         return requestContext;
     }
 
-    private static void processHeaders(HttpHeaders headers, ContainerRequest requestContext) {
+    private static void processRequestHeaders(HttpHeaders headers, ContainerRequest requestContext) {
         for (final Map.Entry<String, String> header : headers) {
             String value = header.getValue();
             final String headerName = header.getKey();
@@ -208,5 +181,4 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
     public void reload(final ResourceConfig configuration) {
         throw new UnsupportedOperationException();
     }
-
 }
