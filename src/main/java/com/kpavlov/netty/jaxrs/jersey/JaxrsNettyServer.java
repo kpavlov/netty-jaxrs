@@ -35,7 +35,7 @@ public class JaxrsNettyServer {
 
         serverBootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
-                .handler(new LoggingHandler(LogLevel.TRACE))
+                .handler(new LoggingHandler(LogLevel.INFO))
                 .childHandler(new JaxrsHttpChannelInitializer(application));
     }
 
