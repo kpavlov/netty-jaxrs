@@ -12,7 +12,7 @@ Create resource endpoint:
 @Path("/")
 public class EchoResource {
 
-     @GET
+    @GET
     @Produces(MediaType.TEXT_PLAIN)
     public Response echo() {
         return Response.ok()
