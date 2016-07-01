@@ -173,14 +173,11 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
         final MultivaluedMap<String, Object> containerResponseHeaders = containerResponse.getHeaders();
         final HttpHeaders responseHeaders = result.headers();
         for (Map.Entry<String, List<Object>> stringListEntry : containerResponseHeaders.entrySet()) {
-            String cookieName = stringListEntry.getKey();
-            List<Object> cookieValues = stringListEntry.getValue();
-            for (Object cookieValue : cookieValues) {
-                responseHeaders.add(cookieName, cookieValue);
-            }
+            String headerName = stringListEntry.getKey();
+            List<Object> headerValues = stringListEntry.getValue();
+            responseHeaders.add(headerName, headerValues);
         }
     }
-
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {

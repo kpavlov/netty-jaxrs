@@ -12,11 +12,9 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpVersion;
 import java.io.OutputStream;
 import java.net.URI;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Context;
+import java.util.List;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.NewCookie;
 import javax.ws.rs.core.Response;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ContainerResponse;
@@ -29,6 +27,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -57,6 +56,8 @@ public class JerseyHttpHandlerTest {
     @Captor
     ArgumentCaptor<FullHttpResponse> httpResponseCaptor;
 
+    private String headerName;
+
     @Before
     public void setUp() throws Exception {
 
@@ -65,6 +66,8 @@ public class JerseyHttpHandlerTest {
         resourceConfig.register(testResource);
 
         handler = new JerseyHttpHandler(resourceConfig, false);
+
+        headerName = randomAlphanumeric(10);
     }
 
     @Test
@@ -81,15 +84,25 @@ public class JerseyHttpHandlerTest {
                 HttpVersion.HTTP_1_1, HttpMethod.GET, "/test?query=a&offset=b#hash=c", Unpooled.buffer(),
                 new DefaultHttpHeaders(), new DefaultHttpHeaders());
         defaultFullHttpRequest.headers().add(HttpHeaderNames.HOST, "localhost:8080");
-        testResource.setResponse(Response.ok().build());
+        defaultFullHttpRequest.headers().add(headerName, randomAlphanumeric(4));
+        defaultFullHttpRequest.headers().add(headerName, randomAlphanumeric(5));
+        defaultFullHttpRequest.headers().add(headerName, randomAlphanumeric(6));
+        final NewCookie newCookie = new NewCookie(randomAlphanumeric(4), randomAlphanumeric(5));
+        testResource.setResponse(Response.ok()
+                .cookie(newCookie)
+                .build());
 
         // when
         handler.channelRead(ctx, defaultFullHttpRequest);
 
         // then
         verify(ctx).write(httpResponseCaptor.capture());
+
         final FullHttpResponse fullHttpResponse = httpResponseCaptor.getValue();
         assertThat(fullHttpResponse.status(), is(HttpResponseStatus.OK));
+        assertThat(fullHttpResponse.headers().get("Set-Cookie"), equalTo(newCookie.toString()));
+
+        testResource.await();
 
         final ContainerRequest containerRequest = testResource.getCapturedRequest();
         assertThat(containerRequest, notNullValue());
@@ -97,30 +110,16 @@ public class JerseyHttpHandlerTest {
         assertThat(requestUri.getPath(), equalTo("/test"));
         assertThat(requestUri.getQuery(), equalTo("query=a&offset=b"));
         assertThat(requestUri.getFragment(), equalTo("hash=c"));
+
+        assertHeaders(testResource.getHttpHeaders(), defaultFullHttpRequest);
     }
 
-    @Path("/test")
-    public static class TestResource {
-
-        private volatile ContainerRequest capturedRequest;
-        private volatile Response response;
-
-        private final CountDownLatch latch = new CountDownLatch(1);
-
-             @GET
-        public Response get(@Context ContainerRequest containerRequest) {
-            this.capturedRequest = containerRequest;
-            latch.countDown();
-            return response;
-        }
-
-        ContainerRequest getCapturedRequest() throws InterruptedException {
-            latch.await(100, TimeUnit.MILLISECONDS);
-            return capturedRequest;
-        }
-
-        public void setResponse(Response response) {
-            this.response = response;
+    private void assertHeaders(HttpHeaders actualHeaders, DefaultFullHttpRequest expectedHeaders) {
+        final List<String> resultHeaderValues = actualHeaders.getRequestHeader(headerName);
+        final List<String> sourceHeaderValues = expectedHeaders.headers().getAll(headerName);
+        for (int i = 0; i < resultHeaderValues.size(); i++) {
+            assertThat(resultHeaderValues.get(i), equalTo(sourceHeaderValues.get(i)));
         }
     }
+
 }
