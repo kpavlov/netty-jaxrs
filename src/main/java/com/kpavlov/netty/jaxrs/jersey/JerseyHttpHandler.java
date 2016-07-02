@@ -8,32 +8,22 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.HttpHeaders;
-import io.netty.handler.codec.http.HttpRequest;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.AsciiString;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Map;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.SecurityContext;
-import javax.ws.rs.core.UriBuilder;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spi.Container;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
+
+import javax.ws.rs.core.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -89,7 +79,6 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
         }
     }
 
-    @NotNull
     private FullHttpResponse consumeRequest(HttpRequest req) {
         FullHttpResponse response;
         try {
@@ -112,20 +101,19 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
         return response;
     }
 
-    @NotNull
     private ContainerRequest createContainerRequest(HttpRequest req) throws URISyntaxException {
-        final HttpHeaders headers = req.headers();
-        final URI baseUri = new URI((isSecure ? "https" : "http") + "://" + headers.get(HttpHeaderNames.HOST) + "/");
+        HttpHeaders headers = req.headers();
+        URI baseUri = new URI((isSecure ? "https" : "http") + "://" + headers.get(HttpHeaderNames.HOST) + "/");
 
-        final URI requestUri = UriBuilder.fromUri(req.uri())
+        URI requestUri = UriBuilder.fromUri(req.uri())
                 .scheme(baseUri.getScheme())
                 .host(baseUri.getHost())
                 .port(baseUri.getPort())
                 .build();
 
-        final String httpMethod = req.method().name();
+        String httpMethod = req.method().name();
 
-        final ContainerRequest requestContext = new ContainerRequest(
+        ContainerRequest requestContext = new ContainerRequest(
                 baseUri,
                 requestUri,
                 httpMethod,
@@ -142,9 +130,9 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
     }
 
     private static void processRequestHeaders(HttpHeaders headers, ContainerRequest requestContext) {
-        for (final Map.Entry<String, String> header : headers) {
+        for (Map.Entry<String, String> header : headers) {
             String value = header.getValue();
-            final String headerName = header.getKey();
+            String headerName = header.getKey();
             if (HttpHeaderNames.CONTENT_TYPE.contentEqualsIgnoreCase(headerName) && value.indexOf(';') > 0) {
                 value = value.substring(0, value.indexOf(';'));
             }
@@ -153,16 +141,16 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
     }
 
     private void consumeEntity(FullHttpRequest req, ContainerRequest requestContext) {
-        final ByteBuf content = req.content();
+        ByteBuf content = req.content();
         if (content != null) {
             requestContext.setEntityStream(new ByteBufInputStream(content));
         }
     }
 
     private FullHttpResponse createNettyResponse(ContainerResponse containerResponse, ByteBuf buffer) {
-        final HttpResponseStatus status = HttpResponseStatus.valueOf(containerResponse.getStatus());
+        HttpResponseStatus status = HttpResponseStatus.valueOf(containerResponse.getStatus());
 
-        final DefaultFullHttpResponse result = new DefaultFullHttpResponse(HTTP_1_1, status, buffer, true);
+        DefaultFullHttpResponse result = new DefaultFullHttpResponse(HTTP_1_1, status, buffer, true);
 
         prepareResponseHeaders(containerResponse, result);
 
@@ -170,8 +158,8 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
     }
 
     private static void prepareResponseHeaders(ContainerResponse containerResponse, DefaultFullHttpResponse result) {
-        final MultivaluedMap<String, Object> containerResponseHeaders = containerResponse.getHeaders();
-        final HttpHeaders responseHeaders = result.headers();
+        MultivaluedMap<String, Object> containerResponseHeaders = containerResponse.getHeaders();
+        HttpHeaders responseHeaders = result.headers();
         for (Map.Entry<String, List<Object>> stringListEntry : containerResponseHeaders.entrySet()) {
             String headerName = stringListEntry.getKey();
             List<Object> headerValues = stringListEntry.getValue();

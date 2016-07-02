@@ -1,16 +1,12 @@
 package com.kpavlov.netty.jaxrs.jersey.endpoints;
 
+import jersey.repackaged.com.google.common.base.MoreObjects;
+import org.slf4j.Logger;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
-import jersey.repackaged.com.google.common.base.MoreObjects;
-import org.slf4j.Logger;
+import javax.ws.rs.core.*;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
@@ -23,7 +19,7 @@ public class EchoEndpoint {
     @Produces(MediaType.TEXT_PLAIN)
     public Response echo(@Context UriInfo uriInfo, @Context Request request, @Context HttpHeaders headers) {
 
-        final String requestInfo = createRequestInfo(uriInfo, request, headers);
+        String requestInfo = createRequestInfo(uriInfo, request, headers);
 
         LOGGER.debug(requestInfo);
 

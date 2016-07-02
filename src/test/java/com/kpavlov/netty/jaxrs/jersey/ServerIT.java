@@ -1,17 +1,14 @@
 package com.kpavlov.netty.jaxrs.jersey;
 
 import com.kpavlov.netty.jaxrs.jersey.util.ServerResource;
+import org.hamcrest.CoreMatchers;
+import org.junit.*;
+import org.slf4j.Logger;
+
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
-import org.hamcrest.CoreMatchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.slf4j.Logger;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,13 +42,13 @@ public class ServerIT {
 
     @Test
     public void echoGetTextPlain() {
-        final Response response = target.path("/").request().header("foo", "bar").get();
+        Response response = target.path("/").request().header("foo", "bar").get();
 
         LOGGER.info("Response: {}", response);
 
         assertThat(response.getStatus(), is(200));
         assertThat(response.hasEntity(), is(true));
-        final String responseAsString = response.readEntity(String.class);
+        String responseAsString = response.readEntity(String.class);
         assertThat(responseAsString, CoreMatchers.containsString("bar"));
     }
 }
