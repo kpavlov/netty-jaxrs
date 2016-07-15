@@ -3,14 +3,28 @@ package com.kpavlov.netty.jaxrs.jersey;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultFullHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpRequest;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.AsciiString;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.UriBuilder;
 import org.glassfish.jersey.internal.MapPropertiesDelegate;
 import org.glassfish.jersey.server.ApplicationHandler;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -18,12 +32,6 @@ import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.spi.Container;
 import org.slf4j.Logger;
-
-import javax.ws.rs.core.*;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.List;
-import java.util.Map;
 
 import static io.netty.handler.codec.http.HttpResponseStatus.INTERNAL_SERVER_ERROR;
 import static io.netty.handler.codec.http.HttpVersion.HTTP_1_1;
@@ -66,7 +74,7 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
             }
             boolean keepAlive = HttpUtil.isKeepAlive(req);
 
-            FullHttpResponse response = consumeRequest(req);
+            FullHttpResponse response = consumeRequest(ctx, req);
 
             response.headers().setInt(CONTENT_LENGTH, response.content().readableBytes());
 
@@ -79,12 +87,12 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
         }
     }
 
-    private FullHttpResponse consumeRequest(HttpRequest req) {
+    private FullHttpResponse consumeRequest(ChannelHandlerContext ctx, HttpRequest req) {
         FullHttpResponse response;
+        final ByteBuf buffer = ctx.alloc().buffer();
         try {
-            final ContainerRequest containerRequest = createContainerRequest(req);
+            final ContainerRequest containerRequest = createContainerRequest(ctx, req);
 
-            final ByteBuf buffer = Unpooled.buffer();
 
             final ContainerResponse containerResponse = getApplicationHandler()
                     .apply(containerRequest, new ByteBufOutputStream(buffer))
@@ -93,6 +101,7 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
             response = createNettyResponse(containerResponse, buffer);
 
         } catch (Exception e) {
+            buffer.release();
             logger.warn("Can't process the request", e);
             response = new DefaultFullHttpResponse(req.protocolVersion(), INTERNAL_SERVER_ERROR);
             response.headers().set(CONTENT_TYPE, MediaType.TEXT_PLAIN);
@@ -101,7 +110,7 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
         return response;
     }
 
-    private ContainerRequest createContainerRequest(HttpRequest req) throws URISyntaxException {
+    private ContainerRequest createContainerRequest(ChannelHandlerContext ctx, HttpRequest req) throws URISyntaxException {
         HttpHeaders headers = req.headers();
         URI baseUri = new URI((isSecure ? "https" : "http") + "://" + headers.get(HttpHeaderNames.HOST) + "/");
 
@@ -119,6 +128,7 @@ public class JerseyHttpHandler extends ChannelInboundHandlerAdapter implements C
                 httpMethod,
                 dummySecurityContext,
                 new MapPropertiesDelegate());
+        requestContext.setProperty(ContainerRequestHelper.CHANNEL_HANDLER_CONTEXT_PROPERTY, ctx);
 
         if (req instanceof FullHttpRequest) {
             consumeEntity((FullHttpRequest) req, requestContext);

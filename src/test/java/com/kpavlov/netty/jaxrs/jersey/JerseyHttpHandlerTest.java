@@ -1,6 +1,8 @@
 package com.kpavlov.netty.jaxrs.jersey;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.DefaultFullHttpRequest;
@@ -31,8 +33,14 @@ import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class JerseyHttpHandlerTest {
@@ -62,12 +70,13 @@ public class JerseyHttpHandlerTest {
     public void setUp() throws Exception {
 
         final ResourceConfig resourceConfig = new ResourceConfig();
-        testResource = new TestResource();
+        testResource = spy(new TestResource());
         resourceConfig.register(testResource);
 
         handler = new JerseyHttpHandler(resourceConfig, false);
 
         headerName = randomAlphanumeric(10);
+        when(ctx.alloc()).thenReturn(PooledByteBufAllocator.DEFAULT);
     }
 
     @Test
@@ -75,6 +84,24 @@ public class JerseyHttpHandlerTest {
         handler.channelReadComplete(ctx);
 
         verify(ctx).flush();
+    }
+
+    @Test
+    public void shouldReleaseBufferOnException() {
+        // given
+        doThrow(new RuntimeException("Expected exception, don't worry"))
+                .when(testResource).get(any(ContainerRequest.class), any(HttpHeaders.class));
+
+        ByteBufAllocator allocator = mock(ByteBufAllocator.class);
+        when(ctx.alloc()).thenReturn(allocator);
+        ByteBuf buffer = mock(ByteBuf.class);
+        when(allocator.buffer()).thenReturn(buffer);
+
+        // when
+        handler.channelRead(ctx, new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, "/test"));
+
+        // then
+        verify(buffer).release();
     }
 
     @Test
@@ -106,6 +133,9 @@ public class JerseyHttpHandlerTest {
 
         final ContainerRequest containerRequest = testResource.getCapturedRequest();
         assertThat(containerRequest, notNullValue());
+
+        assertThat(testResource.getCapturedChannelHandlerContext(), sameInstance(ctx));
+
         final URI requestUri = containerRequest.getRequestUri();
         assertThat(requestUri.getPath(), equalTo("/test"));
         assertThat(requestUri.getQuery(), equalTo("query=a&offset=b"));
