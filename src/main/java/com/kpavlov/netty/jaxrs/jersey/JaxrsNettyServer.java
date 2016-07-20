@@ -3,11 +3,13 @@ package com.kpavlov.netty.jaxrs.jersey;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import java.util.function.Consumer;
 import javax.ws.rs.core.Application;
 import org.slf4j.Logger;
 
@@ -25,6 +27,10 @@ public class JaxrsNettyServer {
     private final EventLoopGroup workerGroup;
 
     public JaxrsNettyServer(String host, int port, Application application) {
+        this(host, port, application, null);
+    }
+
+    public JaxrsNettyServer(String host, int port, Application application, Consumer<ChannelPipeline> pipelineConfigurer) {
         this.host = host;
         this.port = port;
         // Configure the server.
@@ -36,7 +42,7 @@ public class JaxrsNettyServer {
         serverBootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
                 .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(new JaxrsHttpChannelInitializer(application));
+                .childHandler(new JaxrsHttpChannelInitializer(application, pipelineConfigurer));
     }
 
     public void start() {
@@ -60,7 +66,7 @@ public class JaxrsNettyServer {
         }
     }
 
-    public void close() {
+    private void close() {
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
     }
