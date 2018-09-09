@@ -41,7 +41,7 @@
     </developers>
 
     <properties>
-        <java.version>1.8</java.version>
+        <java.version>10</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -79,17 +79,22 @@
             <artifactId>jersey-media-multipart</artifactId>
             <version>${jersey.version}</version>
         </dependency>
+
+        <!--start Java 10 modules-->
+
         <dependency>
-            <groupId>org.codehaus.woodstox</groupId>
-            <artifactId>woodstox-core-asl</artifactId>
-            <version>4.1.2</version>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>2.3.0</version>
         </dependency>
 
         <dependency>
-            <groupId>org.kohsuke.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>9.0</version>
+            <groupId>com.sun.activation</groupId>
+            <artifactId>javax.activation</artifactId>
+            <version>1.2.0</version>
         </dependency>
+
+        <!--end Java 10 modules-->
 
         <!-- Test -->
         <dependency>
