@@ -1,6 +1,6 @@
 package com.kpavlov.netty.jaxrs.jersey.endpoints;
 
-import jersey.repackaged.com.google.common.base.MoreObjects;
+import org.glassfish.jersey.internal.guava.MoreObjects;
 import org.slf4j.Logger;
 
 import javax.ws.rs.GET;
