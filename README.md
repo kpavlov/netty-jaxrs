@@ -27,7 +27,7 @@ Setup Jersey Application:
 ```java
 public class JerseyConfig extends ResourceConfig {
    
-   public TestJerseyConfig() {
+   public JerseyConfig() {
            setApplicationName("test");
            register(JacksonFeature.class);
            register(LoggingFeature.class);
