@@ -2,7 +2,11 @@ package com.kpavlov.netty.jaxrs.jersey;
 
 import com.kpavlov.netty.jaxrs.jersey.util.ServerResource;
 import org.hamcrest.CoreMatchers;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.slf4j.Logger;
 
 import javax.ws.rs.client.Client;
@@ -18,8 +22,8 @@ public class ServerIT {
     private static final Logger LOGGER = getLogger(ServerIT.class);
     private static Client client;
 
-    private String host = "localhost";
-    private int port = 8080;
+    private final String host = "localhost";
+    private final int port = 8080;
     private WebTarget target;
     @Rule
     public ServerResource httpServer = new ServerResource(host, port);

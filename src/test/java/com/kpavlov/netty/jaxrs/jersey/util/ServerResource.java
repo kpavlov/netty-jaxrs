@@ -15,7 +15,7 @@ public class ServerResource extends ExternalResource {
     }
 
     @Override
-    protected void before() throws Throwable {
+    protected void before() {
         myServer.start();
     }
 

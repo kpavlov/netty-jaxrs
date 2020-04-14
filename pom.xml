@@ -6,7 +6,7 @@
 
     <groupId>com.github.kpavlov</groupId>
     <artifactId>netty-jaxrs</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.1-SNAPSHOT</version>
 
     <issueManagement>
         <system>GITHUB</system>
